@@ -10,7 +10,7 @@ import javax.swing.*;
 
 public class MineopolyMain {
     private static final int DEFAULT_BOARD_SIZE = 20;
-    private static final int PREFERRED_GUI_WIDTH = 750; // Bump this up or down according to your screen size
+    private static final int PREFERRED_GUI_WIDTH = 500; // Bump this up or down according to your screen size
     private static final boolean TEST_STRATEGY_WIN_PERCENT = false; // Change to true to test your win percent
 
     // Use this if you want to view a past match replay
@@ -37,7 +37,7 @@ public class MineopolyMain {
         final GameEngine gameEngine;
         if (savedReplayFilePath == null) {
             // Not viewing a replay, play a game with a GUI instead
-            MinePlayerStrategy redStrategy = new RandomStrategy(); // TODO: Replace this with your strategy
+            MinePlayerStrategy redStrategy = new ZaidStrategy(); 
             MinePlayerStrategy blueStrategy = new RandomStrategy();
             long randomSeed = System.currentTimeMillis();
             gameEngine = new GameEngine(DEFAULT_BOARD_SIZE, redStrategy, blueStrategy, randomSeed);

@@ -1,5 +1,6 @@
 package mineopoly_three.strategy;
 
+import jdk.nashorn.internal.objects.Global;
 import mineopoly_three.action.TurnAction;
 import mineopoly_three.game.Economy;
 import mineopoly_three.item.InventoryItem;
@@ -14,10 +15,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ZaidStrategy implements MinePlayerStrategy {
-  private List<Point> itemLocations = new ArrayList<>();
   private int inOneDirection = 0;
   private int inventorySize = 0;
   private Point marketTile;
+  private Point rechargeStation;
 
   /**
    * Called at the start of every round
@@ -46,6 +47,7 @@ public class ZaidStrategy implements MinePlayerStrategy {
       boolean isRedPlayer,
       Random random) {
     marketTile = startTileLocation;
+    inventorySize = 0;
   }
 
   /**
@@ -67,26 +69,24 @@ public class ZaidStrategy implements MinePlayerStrategy {
   public TurnAction getTurnAction(
       PlayerBoardView boardView, Economy economy, int currentCharge, boolean isRedTurn) {
 
-    for (List<InventoryItem> point : boardView.getItemsOnGround().values()) {
-      if (!point.isEmpty() && inventorySize < 5) {
-        if (point.get(0).getItemType().getResourceTileType() == TileType.RESOURCE_DIAMOND
-            || point.get(0).getItemType().getResourceTileType() == TileType.RESOURCE_EMERALD
-            || point.get(0).getItemType().getResourceTileType() == TileType.RESOURCE_RUBY) {
+    for (Map.Entry<Point, List<InventoryItem>> inventoryItem :
+        boardView.getItemsOnGround().entrySet()) {
+      if (!inventoryItem.getValue().isEmpty() && inventorySize < 5) {
+        if (inventoryItem.getValue().get(0).getItemType() != null
+            && inventoryItem.getKey().getLocation().equals(boardView.getYourLocation())) {
+          System.out.println(inventoryItem);
           inventorySize++;
           return TurnAction.PICK_UP_RESOURCE;
         }
       }
     }
 
+    System.out.println(currentCharge);
+
     double changeInY = marketTile.getY() - boardView.getYourLocation().getY();
     double changeInX = marketTile.getX() - boardView.getYourLocation().getX();
 
-    if (boardView.getYourLocation().equals(marketTile)) {
-      inventorySize = 0;
-    }
-
-    if (inventorySize == 5) {
-      System.out.println("hmm");
+    if (inventorySize > 4) {
       if (changeInY < 0) {
         return TurnAction.MOVE_DOWN;
       } else if (changeInY > 0) {
@@ -96,6 +96,9 @@ public class ZaidStrategy implements MinePlayerStrategy {
         return TurnAction.MOVE_LEFT;
       } else if (changeInX > 0) {
         return TurnAction.MOVE_RIGHT;
+      }
+      if (changeInY == 0) {
+        inventorySize = 0;
       }
     }
 
@@ -138,6 +141,7 @@ public class ZaidStrategy implements MinePlayerStrategy {
       }
       return TurnAction.MOVE_LEFT;
     }
+
     return null;
 
     //    if (tileToRight == TileType.RESOURCE_DIAMOND) {

@@ -7,11 +7,13 @@ import mineopoly_three.replay.ReplayIO;
 import mineopoly_three.strategy.*;
 
 import javax.swing.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MineopolyMain {
-    private static final int DEFAULT_BOARD_SIZE = 14;
+    private static final int DEFAULT_BOARD_SIZE = 10;
     private static final int PREFERRED_GUI_WIDTH = 500; // Bump this up or down according to your screen size
-    private static final boolean TEST_STRATEGY_WIN_PERCENT = true; // Change to true to test your win percent
+    private static final boolean TEST_STRATEGY_WIN_PERCENT = false; // Change to true to test your win percent
 
     // Use this if you want to view a past match replay
     private static final String savedReplayFilePath = null;
@@ -20,7 +22,7 @@ public class MineopolyMain {
 
     public static void main(String[] args) {
         if (TEST_STRATEGY_WIN_PERCENT) {
-            MinePlayerStrategy yourStrategy = new ZaidStrategy(); 
+            MinePlayerStrategy yourStrategy = new ZaidStrategy();
             int[] assignmentBoardSizes = new int[]{14, 20, 26, 32};
 
             for (int i = 0; i < assignmentBoardSizes.length; i++) {
@@ -70,16 +72,19 @@ public class MineopolyMain {
     private static double getStrategyWinPercent(MinePlayerStrategy yourStrategy, int boardSize) {
         final int numTotalRounds = 1000;
         int numRoundsWonByMinScore = 0;
-        int minScore = 30 * (boardSize * boardSize);
         MinePlayerStrategy randomStrategy = new RandomStrategy();
-        long randomSeed = System.currentTimeMillis();
-        GameEngine gameEngine = new GameEngine(boardSize, yourStrategy, randomStrategy, randomSeed);
-        gameEngine.runGame();
+        List<GameEngine> gameEngines = new ArrayList<>();
 
-        if (gameEngine.getRedPlayerScore() >= gameEngine.getMinScoreToWin()) {
-            numRoundsWonByMinScore++;
+        for (int i = 0; i < numTotalRounds; i++) {
+            gameEngines.add(new GameEngine(boardSize, yourStrategy, randomStrategy));
         }
-
+        for (GameEngine gameEngine: gameEngines) {
+            gameEngine.runGame();
+            if (gameEngine.getMinScoreToWin() <= gameEngine.getRedPlayerScore()) {
+                System.out.println(gameEngine.getRedPlayerScore());
+                numRoundsWonByMinScore++;
+            }
+        }
         return ((double) numRoundsWonByMinScore) / numTotalRounds;
     }
 }

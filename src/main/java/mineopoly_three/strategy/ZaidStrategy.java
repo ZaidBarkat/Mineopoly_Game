@@ -1,25 +1,24 @@
 package mineopoly_three.strategy;
 
-import jdk.nashorn.internal.objects.Global;
 import mineopoly_three.action.TurnAction;
 import mineopoly_three.game.Economy;
 import mineopoly_three.item.InventoryItem;
-import mineopoly_three.tiles.Tile;
+import mineopoly_three.item.ItemType;
 import mineopoly_three.tiles.TileType;
 import mineopoly_three.util.DistanceUtil;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Random;
+import java.lang.reflect.Array;
+import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ZaidStrategy implements MinePlayerStrategy {
   private int inventorySize = 0;
   private Point[] marketTile = new Point[2];
-  private Point rechargeStation;
-  private ArrayList<Point> diamondLocations = new ArrayList<>();
+  private ArrayList<Point> rechargeStations = new ArrayList<>();
+  private ArrayList<Point> rubyLocations = new ArrayList<>();
+  private ArrayList<Point> emeraldLocations = new ArrayList<>();
+  private ArrayList<Point> resourceLocations = new ArrayList<>();
 
   /**
    * Called at the start of every round
@@ -52,22 +51,21 @@ public class ZaidStrategy implements MinePlayerStrategy {
 
     for (int row = 0; row < boardSize; row++) {
       for (int col = 0; col < boardSize; col++) {
-        if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RESOURCE_DIAMOND || startingBoard.getTileTypeAtLocation(row, col) == TileType.RESOURCE_RUBY || startingBoard.getTileTypeAtLocation(row, col) == TileType.RESOURCE_EMERALD) {
-          diamondLocations.add(new Point(row, col));
-        }
-        if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RECHARGE) {
-          rechargeStation = new Point(row, col);
-        }
-        if (isRedPlayer) {
+        if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RESOURCE_DIAMOND || startingBoard.getTileTypeAtLocation(row, col) == TileType.RESOURCE_EMERALD) {
+          resourceLocations.add(new Point(row, col));
+        } else if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RESOURCE_RUBY) {
+          rubyLocations.add(new Point(row, col));
+        } else if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RESOURCE_EMERALD) {
+          emeraldLocations.add(new Point(row, col));
+        } else if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RECHARGE) {
+          rechargeStations.add(new Point(row, col));
+        } else if (isRedPlayer) {
           if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RED_MARKET) {
             marketTile[0] = new Point(row, col);
           }
-          }else {
-          if (startingBoard.getTileTypeAtLocation(row, col) == TileType.BLUE_MARKET) {
-            marketTile[0] = new Point(row, col);
-          }
+        } else if (startingBoard.getTileTypeAtLocation(row, col) == TileType.BLUE_MARKET) {
+          marketTile[0] = new Point(row, col);
         }
-
       }
     }
   }
@@ -90,164 +88,52 @@ public class ZaidStrategy implements MinePlayerStrategy {
   @Override
   public TurnAction getTurnAction(
       PlayerBoardView boardView, Economy economy, int currentCharge, boolean isRedTurn) {
-    int changeInY;
-    int changeInX;
-    int changeInYDifferent;
-    int changeInXDifferent;
-    double distanceY;
-    double distanceX;
-    double rechargeX;
-    double rechargeY;
-
-    rechargeY = rechargeStation.getY() - boardView.getYourLocation().getY();
-    rechargeX = rechargeStation.getX() - boardView.getYourLocation().getX();
+    Point yourLocation = boardView.getYourLocation();
+    Point yourLocationFromRecharge = differenceInDimension(rechargeStations.get(0), yourLocation);
+    Point yourLocationFromMarketAbove = differenceInDimension(marketTile[0], yourLocation);
+    Point yourLocationFromMarketBelow = differenceInDimension(marketTile[1], yourLocation);
+    Point closestMarket;
+    Point closestResource;
 
     if (currentCharge <= 20) {
-      if (rechargeY < 0) {
-        return TurnAction.MOVE_DOWN;
-      } else if (rechargeY > 0) {
-        return TurnAction.MOVE_UP;
+      if (robotMovement(yourLocationFromRecharge) != null) {
+        return robotMovement(yourLocationFromRecharge);
       }
-      if (rechargeX < 0) {
-        return TurnAction.MOVE_LEFT;
-      } else if (rechargeX > 0) {
-        return TurnAction.MOVE_RIGHT;
+    }
+    for (Point rechargeStation: rechargeStations) {
+      if (yourLocation.equals(rechargeStation) && currentCharge != 80) {
+        return null;
       }
     }
 
-    if (rechargeX == 0 && rechargeY == 0 && currentCharge != 80) {
-      return null;
-    }
-
-    changeInY = (int) marketTile[0].getY() - (int) boardView.getYourLocation().getY();
-    changeInX = (int) marketTile[0].getX() - (int) boardView.getYourLocation().getX();
-    changeInYDifferent = (int) marketTile[1].getY() - (int) boardView.getYourLocation().getY();
-    changeInXDifferent = (int) marketTile[1].getX() - (int) boardView.getYourLocation().getX();
-
-    if (DistanceUtil.getManhattanDistance(changeInXDifferent, changeInYDifferent, (int) boardView.getYourLocation().getX(), (int) boardView.getYourLocation().getY()) < DistanceUtil.getManhattanDistance(changeInX, changeInY, (int) boardView.getYourLocation().getX(), (int) boardView.getYourLocation().getY())) {
-      changeInY = changeInYDifferent;
-      changeInX = changeInXDifferent;
-    }
-
-    if (inventorySize > 4) {
-      if (changeInY < 0) {
-        return TurnAction.MOVE_DOWN;
-      } else if (changeInY > 0) {
-        return TurnAction.MOVE_UP;
-      }
-      if (changeInX < 0) {
-        return TurnAction.MOVE_LEFT;
-      } else if (changeInX > 0) {
-        return TurnAction.MOVE_RIGHT;
-      }
-      if (changeInY == 0 && changeInX == 0) {
-        inventorySize = 0;
-      }
-    }
-
-    Point location = diamondLocations.get(0);
-
-    for (Point closestLocation: diamondLocations) {
-      if (DistanceUtil.getManhattanDistance(location, boardView.getYourLocation()) > DistanceUtil.getManhattanDistance(closestLocation, boardView.getYourLocation())) {
-        location = closestLocation;
-      }
-    }
-
-    distanceY = boardView.getYourLocation().getY() - location.getY();
-    distanceX = boardView.getYourLocation().getX() - location.getX();
-
-    if (distanceY < 0) {
-      return TurnAction.MOVE_UP;
-    } else if (distanceY > 0) {
-      return TurnAction.MOVE_DOWN;
-    }
-    if (distanceX < 0) {
-      return TurnAction.MOVE_RIGHT;
-    } else if (distanceX > 0) {
-      return TurnAction.MOVE_LEFT;
-    }
+    closestResource = findClosestResourceLocation(yourLocation);
 
     for (Map.Entry<Point, List<InventoryItem>> itemsOnGround :
         boardView.getItemsOnGround().entrySet()) {
       if (!itemsOnGround.getValue().isEmpty() && inventorySize < 5) {
-        if (itemsOnGround.getValue().get(0).getItemType().getResourceTileType() != null
-            && itemsOnGround.getKey().getLocation().equals(boardView.getYourLocation())) {
+        Point locationOfItem = itemsOnGround.getKey().getLocation();
+
+        if (locationOfItem.equals(yourLocation)) {
           inventorySize++;
-          diamondLocations.remove(location);
+          resourceLocations.remove(closestResource);
           return TurnAction.PICK_UP_RESOURCE;
         }
-        }
       }
+    }
 
-    if (distanceX == 0 && distanceY == 0) {
+    closestMarket =
+        closestMarketLocation(
+            yourLocationFromMarketBelow, yourLocationFromMarketAbove);
+    if (goToMarket(closestMarket) != null) {
+      return goToMarket(closestMarket);
+    }
+
+    Point movingToResource = differenceInDimension(closestResource, yourLocation);
+    if (robotMovement(movingToResource) != null) {
+      return robotMovement(movingToResource);
+    } else if (closestResource.equals(yourLocation)) {
       return TurnAction.MINE;
     }
-//
-//
-//    if (currentCharge <= 50) {
-//      changeInY = rechargeStation.getY() - boardView.getYourLocation().getY();
-//      changeInX = rechargeStation.getX() - boardView.getYourLocation().getX();
-//
-//      if (changeInY < 0) {
-//        return TurnAction.MOVE_DOWN;
-//      } else if (changeInY > 0) {
-//        return TurnAction.MOVE_UP;
-//      }
-//      if (changeInX < 0) {
-//        return TurnAction.MOVE_LEFT;
-//      } else if (changeInX > 0) {
-//        return TurnAction.MOVE_RIGHT;
-//      }
-//      if (changeInX == 0) {
-//        return null;
-//      }
-//    }
-//
-//
-//
-//
-
-//
-//    inOneDirection++;
-//
-//    if (inOneDirection > 80) {
-//      inOneDirection = 0;
-//    }
-//
-//    if (inOneDirection < 20) {
-//      if (boardView.getTileTypeAtLocation(boardView.getYourLocation()) == TileType.RESOURCE_EMERALD
-//          || boardView.getTileTypeAtLocation(boardView.getYourLocation()) == TileType.RESOURCE_RUBY
-//          || boardView.getTileTypeAtLocation(boardView.getYourLocation())
-//              == TileType.RESOURCE_DIAMOND) {
-//        return TurnAction.MINE;
-//      }
-//      return TurnAction.MOVE_DOWN;
-//    } else if (inOneDirection < 40) {
-//      if (boardView.getTileTypeAtLocation(boardView.getYourLocation()) == TileType.RESOURCE_EMERALD
-//          || boardView.getTileTypeAtLocation(boardView.getYourLocation()) == TileType.RESOURCE_RUBY
-//          || boardView.getTileTypeAtLocation(boardView.getYourLocation())
-//              == TileType.RESOURCE_DIAMOND) {
-//        return TurnAction.MINE;
-//      }
-//      return TurnAction.MOVE_RIGHT;
-//    } else if (inOneDirection < 60) {
-//      if (boardView.getTileTypeAtLocation(boardView.getYourLocation()) == TileType.RESOURCE_EMERALD
-//          || boardView.getTileTypeAtLocation(boardView.getYourLocation()) == TileType.RESOURCE_RUBY
-//          || boardView.getTileTypeAtLocation(boardView.getYourLocation())
-//              == TileType.RESOURCE_DIAMOND) {
-//        return TurnAction.MINE;
-//      }
-//      return TurnAction.MOVE_UP;
-//    } else if (inOneDirection < 80) {
-//      if (boardView.getTileTypeAtLocation(boardView.getYourLocation()) == TileType.RESOURCE_EMERALD
-//          || boardView.getTileTypeAtLocation(boardView.getYourLocation()) == TileType.RESOURCE_RUBY
-//          || boardView.getTileTypeAtLocation(boardView.getYourLocation())
-//              == TileType.RESOURCE_DIAMOND) {
-//        return TurnAction.MINE;
-//      }
-//      return TurnAction.MOVE_LEFT;
-//    }
-
     return null;
   }
 
@@ -259,6 +145,11 @@ public class ZaidStrategy implements MinePlayerStrategy {
    */
   @Override
   public void onReceiveItem(InventoryItem itemReceived) {
+//    if (prioritizeDiamond) {
+//      diamondLocations.remove(resourcePrioritized);
+//    } else {
+//      emeraldLocations.remove(resourcePrioritized);
+//    }
   }
 
   /**
@@ -268,7 +159,13 @@ public class ZaidStrategy implements MinePlayerStrategy {
    * @param totalSellPrice The combined sell price for all items in your strategy's inventory
    */
   @Override
-  public void onSoldInventory(int totalSellPrice) {}
+  public void onSoldInventory(int totalSellPrice) {
+//    if (totalSellPrice >= 2250) {
+//      prioritizeDiamond = false;
+//    } else {
+//      prioritizeDiamond = true;
+//    }
+  }
 
   /**
    * Gets the name of this strategy. The amount of characters that can actually be displayed on a
@@ -293,5 +190,83 @@ public class ZaidStrategy implements MinePlayerStrategy {
   @Override
   public void endRound(int pointsScored, int opponentPointsScored) {
     inventorySize = 0;
+    resourceLocations.clear();
+    emeraldLocations.clear();
+    rubyLocations.clear();
+    rechargeStations.clear();
+  }
+
+  private TurnAction robotMovement(Point dimensions) {
+    if (dimensions.y < 0) {
+      return TurnAction.MOVE_DOWN;
+    } else if (dimensions.y > 0) {
+      return TurnAction.MOVE_UP;
+    }
+    if (dimensions.x < 0) {
+      return TurnAction.MOVE_LEFT;
+    } else if (dimensions.x > 0) {
+      return TurnAction.MOVE_RIGHT;
+    }
+    return null;
+  }
+
+  public Point differenceInDimension(Point tileToBeReached, Point currentTile) {
+    Point positionDifference =
+        new Point(
+            (int) tileToBeReached.getX() - (int) currentTile.getX(),
+            (int) tileToBeReached.getY() - (int) currentTile.getY());
+    return positionDifference;
+  }
+
+  public Point closestMarketLocation(Point marketBelow, Point marketAbove) {
+    Point closestMarket;
+
+    if (Math.abs(marketBelow.getY()) > Math.abs(marketAbove.getY())
+        && Math.abs(marketBelow.getX()) > Math.abs(marketAbove.getX())) {
+      closestMarket = marketAbove;
+    } else {
+      closestMarket = marketBelow;
+    }
+
+    return closestMarket;
+  }
+
+  public TurnAction goToMarket(Point closestMarket) {
+    if (inventorySize == 5) {
+      if (robotMovement(closestMarket) != null) {
+        return robotMovement(closestMarket);
+      } else if (closestMarket.x == 0 && closestMarket.y == 0) {
+        inventorySize = 0;
+      }
+    }
+    return null;
+  }
+
+  public TurnAction goToRecharge(Point rechargeStation, int currentCharge) {
+    if (currentCharge <= 20) {
+      if (robotMovement(rechargeStation) != null) {
+        return robotMovement(rechargeStation);
+      }
+    }
+    if (rechargeStation.x == 0 && rechargeStation.y == 0 && currentCharge != 80) {
+      return null;
+    }
+    return TurnAction.MINE;
+  }
+
+  public Point findClosestResourceLocation(Point yourLocation) {
+    Point firstLocation = resourceLocations.get(0);
+
+    for (Point closestLocation : resourceLocations) {
+      if (DistanceUtil.getManhattanDistance(firstLocation, yourLocation)
+          > DistanceUtil.getManhattanDistance(closestLocation, yourLocation)) {
+        firstLocation = closestLocation;
+      }
+    }
+    return firstLocation;
+  }
+
+  public void setInventorySize(int inventorySize) {
+    this.inventorySize = inventorySize;
   }
 }

@@ -9,11 +9,12 @@ import mineopoly_three.strategy.*;
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class MineopolyMain {
-    private static final int DEFAULT_BOARD_SIZE = 10;
+    private static final int DEFAULT_BOARD_SIZE = 14;
     private static final int PREFERRED_GUI_WIDTH = 500; // Bump this up or down according to your screen size
-    private static final boolean TEST_STRATEGY_WIN_PERCENT = false; // Change to true to test your win percent
+    private static final boolean TEST_STRATEGY_WIN_PERCENT = true; // Change to true to test your win percent
 
     // Use this if you want to view a past match replay
     private static final String savedReplayFilePath = null;
@@ -25,10 +26,10 @@ public class MineopolyMain {
             MinePlayerStrategy yourStrategy = new ZaidStrategy();
             int[] assignmentBoardSizes = new int[]{14, 20, 26, 32};
 
-            for (int i = 0; i < assignmentBoardSizes.length; i++) {
+            for (int testBoardSize: assignmentBoardSizes) {
                 //System.out.println(testBoardSize);
-                double strategyWinPercent = getStrategyWinPercent(yourStrategy, assignmentBoardSizes[i]);
-                System.out.println("(Board size, win percent): (" + assignmentBoardSizes[i] + ", " + strategyWinPercent + ")");
+                double strategyWinPercent = getStrategyWinPercent(yourStrategy, testBoardSize);
+                System.out.println("(Board size, win percent): (" + testBoardSize + ", " + strategyWinPercent + ")");
             }
         } else {
             // Not testing the win percent, show the game instead
@@ -74,14 +75,19 @@ public class MineopolyMain {
         int numRoundsWonByMinScore = 0;
         MinePlayerStrategy randomStrategy = new RandomStrategy();
         List<GameEngine> gameEngines = new ArrayList<>();
+        Random random = new Random();
 
         for (int i = 0; i < numTotalRounds; i++) {
-            gameEngines.add(new GameEngine(boardSize, yourStrategy, randomStrategy));
+            gameEngines.add(new GameEngine(boardSize, yourStrategy, randomStrategy, random.nextLong()));
         }
         for (GameEngine gameEngine: gameEngines) {
             gameEngine.runGame();
+            System.out.println(gameEngine.getRedPlayerScore());
+            if (gameEngine.getRedPlayerScore() < 5880) {
+                System.out.println(gameEngine.getReplay().getRedPlayerActions());
+                System.out.println(gameEngine.);
+            }
             if (gameEngine.getMinScoreToWin() <= gameEngine.getRedPlayerScore()) {
-                System.out.println(gameEngine.getRedPlayerScore());
                 numRoundsWonByMinScore++;
             }
         }

@@ -32,10 +32,8 @@ public class MineopolyTest {
           {TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY},
           {TileType.BLUE_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY},
                 {TileType.RECHARGE, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY},
-                {TileType.RESOURCE_DIAMOND, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY}
+                {TileType.RESOURCE_EMERALD, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY}
         };
-
-    //GameBoard board = new GameBoard(boardTileTypes);
 
     boardView =
         new PlayerBoardView(boardTileTypes, new HashMap<>(), new Point(), new Point(), 0);
@@ -52,17 +50,42 @@ public class MineopolyTest {
   }
 
   @Test
-  public void testResourceTileMovement() {
+  public void testInValidMarketTileRedMovement() {
+    zaidStrategy.setInventorySize(4);
     TurnAction action = zaidStrategy.getTurnAction(boardView, null, 80, true);
 
     assertEquals(TurnAction.MINE, action);
   }
 
   @Test
-  public void testRechargeTileMovement() {
+  public void testResourceTileMining() {
+    TurnAction action = zaidStrategy.getTurnAction(boardView, null, 80, true);
 
+    assertEquals(TurnAction.MINE, action);
+  }
+
+  @Test
+  public void testResourceTilePickingUp() {
+    zaidStrategy.getTurnAction(boardView, null, 80, true);
+    boardView.getItemsOnGround().get(boardView.getYourLocation());
+    zaidStrategy.getTurnAction(boardView, null, 80, true);
+    zaidStrategy.getTurnAction(boardView, null, 80, true);
+    TurnAction action = zaidStrategy.getTurnAction(boardView, null, 80, true);
+
+    assertEquals(TurnAction.PICK_UP_RESOURCE, action);
+  }
+
+  @Test
+  public void testValidRechargeTileMovement() {
     TurnAction action = zaidStrategy.getTurnAction(boardView, null, 20, true);
 
     assertEquals(TurnAction.MOVE_UP, action);
+  }
+
+  @Test
+  public void testInValidRechargeTileMovement() {
+    TurnAction action = zaidStrategy.getTurnAction(boardView, null, 21, true);
+
+    assertEquals(TurnAction.MINE, action);
   }
 }

@@ -12,9 +12,9 @@ import java.util.List;
 
 public class ZaidStrategy implements MinePlayerStrategy {
   private int inventorySize = 0;
-  private int fullInventory;
-  private int fullCharge;
-  private int boardLength;
+  private int maxInventorySize;
+  private int maxCharge;
+  private int boardSize;
   private ArrayList<Point> marketTiles = new ArrayList<>();
   private ArrayList<Point> rechargeStations = new ArrayList<>();
 
@@ -45,9 +45,9 @@ public class ZaidStrategy implements MinePlayerStrategy {
       boolean isRedPlayer,
       Random random) {
     inventorySize = 0;
-    fullInventory = maxInventorySize;
-    fullCharge = maxCharge;
-    boardLength = boardSize;
+    this.maxInventorySize = maxInventorySize;
+    this.maxCharge = maxCharge;
+    this.boardSize = boardSize;
 
     for (int row = 0; row < boardSize; row++) {
       for (int col = 0; col < boardSize; col++) {
@@ -78,30 +78,30 @@ public class ZaidStrategy implements MinePlayerStrategy {
   @Override
   public TurnAction getTurnAction(
       PlayerBoardView boardView, Economy economy, int currentCharge, boolean isRedTurn) {
-    ArrayList<Point> resourceLocations = findAllResources(boardView);
     Point yourLocation = boardView.getYourLocation();
     Point closestMarket = findClosestMarketLocation(yourLocation);
-    Point closestResource = findClosestResource(yourLocation, resourceLocations);
-    Map.Entry<Point, List<InventoryItem>> itemToPickUp = pickUpResource(boardView, yourLocation);
+    Point closestResource = findClosestResourceTile(yourLocation, findAllResourceTiles(boardView));
 
     TurnAction goToResource = computeMovement(closestResource, yourLocation);
     TurnAction goToRecharge = computeMovement(rechargeStations.get(0), yourLocation);
     TurnAction goToMarket = computeMovement(closestMarket, yourLocation);
 
-    if (currentCharge <= fullCharge / 4 && goToRecharge != null) {
+    List<InventoryItem> itemOnGround = boardView.getItemsOnGround().get(yourLocation);
+
+    if (currentCharge <= maxCharge / 4 && goToRecharge != null) {
       return goToRecharge;
-    } else if (onRecharge(yourLocation, currentCharge)) {
+    } else if (isOnRecharge(yourLocation, currentCharge)) {
       return null;
     }
 
-    if (itemToPickUp != null) {
+    if (!itemOnGround.isEmpty() && inventorySize < 5) {
       inventorySize++;
       return TurnAction.PICK_UP_RESOURCE;
     }
 
-    if (inventorySize == fullInventory && goToMarket != null) {
-        return goToMarket;
-    }else  if (closestMarket.equals(yourLocation)) {
+    if (inventorySize == maxInventorySize && goToMarket != null) {
+      return goToMarket;
+    } else if (closestMarket.equals(yourLocation)) {
       inventorySize = 0;
     }
 
@@ -110,6 +110,7 @@ public class ZaidStrategy implements MinePlayerStrategy {
     } else if (closestResource.equals(yourLocation)) {
       return TurnAction.MINE;
     }
+
     return null;
   }
 
@@ -120,8 +121,7 @@ public class ZaidStrategy implements MinePlayerStrategy {
    * @param itemReceived The item received from the player's TurnAction on their last turn
    */
   @Override
-  public void onReceiveItem(InventoryItem itemReceived) {
-  }
+  public void onReceiveItem(InventoryItem itemReceived) {}
 
   /**
    * Called when the player steps on a market tile with items to sell. Tells your strategy how much
@@ -130,8 +130,7 @@ public class ZaidStrategy implements MinePlayerStrategy {
    * @param totalSellPrice The combined sell price for all items in your strategy's inventory
    */
   @Override
-  public void onSoldInventory(int totalSellPrice) {
-  }
+  public void onSoldInventory(int totalSellPrice) {}
 
   /**
    * Gets the name of this strategy. The amount of characters that can actually be displayed on a
@@ -156,15 +155,23 @@ public class ZaidStrategy implements MinePlayerStrategy {
   @Override
   public void endRound(int pointsScored, int opponentPointsScored) {
     inventorySize = 0;
-    boardLength = 0;
-    fullInventory = 0;
-    fullCharge = 0;
+    boardSize = 0;
+    maxInventorySize = 0;
+    maxCharge = 0;
     rechargeStations.clear();
     marketTiles.clear();
   }
 
-  private TurnAction computeMovement(
-      Point targetLocation, Point initialLocation) {
+  private boolean isOnRecharge(Point yourLocation, int currentCharge) {
+    for (Point rechargeStation : rechargeStations) {
+      if (yourLocation.equals(rechargeStation) && currentCharge != maxCharge) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private TurnAction computeMovement(Point targetLocation, Point initialLocation) {
     if (targetLocation.y < initialLocation.y) {
       return TurnAction.MOVE_DOWN;
     } else if (targetLocation.y > initialLocation.y) {
@@ -181,7 +188,8 @@ public class ZaidStrategy implements MinePlayerStrategy {
   private Point findClosestMarketLocation(Point yourLocation) {
     Point closestMarket;
 
-    if (DistanceUtil.getManhattanDistance(marketTiles.get(0), yourLocation) > DistanceUtil.getManhattanDistance(marketTiles.get(1), yourLocation)) {
+    if (DistanceUtil.getManhattanDistance(marketTiles.get(0), yourLocation)
+        > DistanceUtil.getManhattanDistance(marketTiles.get(1), yourLocation)) {
       closestMarket = marketTiles.get(1);
     } else {
       closestMarket = marketTiles.get(0);
@@ -190,19 +198,7 @@ public class ZaidStrategy implements MinePlayerStrategy {
     return closestMarket;
   }
 
-  private boolean onRecharge(Point yourLocation, int currentCharge) {
-    for (Point rechargeStation : rechargeStations) {
-      if (yourLocation.equals(rechargeStation) && currentCharge != fullCharge) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // each function does distinct thing, make one function
-
-
-  private Point findClosestResource(Point yourLocation, ArrayList<Point> resources) {
+  private Point findClosestResourceTile(Point yourLocation, ArrayList<Point> resources) {
     Point firstLocation = resources.get(0);
 
     for (Point closestLocation : resources) {
@@ -214,10 +210,10 @@ public class ZaidStrategy implements MinePlayerStrategy {
     return firstLocation;
   }
 
-  private ArrayList<Point> findAllResources(PlayerBoardView boardView) {
+  private ArrayList<Point> findAllResourceTiles(PlayerBoardView boardView) {
     ArrayList<Point> resources = new ArrayList<>();
-    for (int row = 0; row < boardLength; row++) {
-      for (int col = 0; col < boardLength; col++) {
+    for (int row = 0; row < boardSize; row++) {
+      for (int col = 0; col < boardSize; col++) {
         if (boardView.getTileTypeAtLocation(row, col) == TileType.RESOURCE_DIAMOND
             || boardView.getTileTypeAtLocation(row, col) == TileType.RESOURCE_EMERALD) {
           resources.add(new Point(row, col));
@@ -225,20 +221,6 @@ public class ZaidStrategy implements MinePlayerStrategy {
       }
     }
     return resources;
-  }
-
-  private Map.Entry<Point, List<InventoryItem>> pickUpResource(PlayerBoardView boardView, Point yourLocation) {
-    for (Map.Entry<Point, List<InventoryItem>> itemOnGround :
-            boardView.getItemsOnGround().entrySet()) {
-      if (!itemOnGround.getValue().isEmpty()) {
-        Point locationOfItem = itemOnGround.getKey().getLocation();
-
-        if (locationOfItem.equals(yourLocation)) {
-          return itemOnGround;
-        }
-      }
-    }
-    return null;
   }
 
   public void setInventorySize(int inventorySize) {

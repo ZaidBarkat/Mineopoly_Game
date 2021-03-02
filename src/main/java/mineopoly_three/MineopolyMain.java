@@ -82,10 +82,6 @@ public class MineopolyMain {
         }
         for (GameEngine gameEngine: gameEngines) {
             gameEngine.runGame();
-
-            if (gameEngine.getRedPlayerScore() < 2800) {
-                System.out.println(gameEngine.getReplay().getRedPlayerActions());
-            }
             if (gameEngine.getMinScoreToWin() <= gameEngine.getRedPlayerScore()) {
                 numRoundsWonByMinScore++;
             }

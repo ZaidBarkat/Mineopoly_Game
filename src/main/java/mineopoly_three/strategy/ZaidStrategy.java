@@ -7,11 +7,13 @@ import mineopoly_three.tiles.TileType;
 import mineopoly_three.util.DistanceUtil;
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 public class ZaidStrategy implements MinePlayerStrategy {
   private int inventorySize = 0;
   private int maxInventorySize;
   private int maxCharge;
+  private int boardSize;
   private ArrayList<Point> marketTiles = new ArrayList<>();
   private ArrayList<Point> rechargeStations = new ArrayList<>();
 
@@ -44,16 +46,17 @@ public class ZaidStrategy implements MinePlayerStrategy {
     inventorySize = 0;
     this.maxInventorySize = maxInventorySize;
     this.maxCharge = maxCharge;
+    this.boardSize = boardSize;
 
-    startingBoard.getItemsOnGround().keySet()
-        .forEach(
-            location -> {
-              if (startingBoard.getTileTypeAtLocation(location) == TileType.RECHARGE) {
-                rechargeStations.add(location);
-              } else if (startingBoard.getTileTypeAtLocation(location) == TileType.RED_MARKET) {
-                marketTiles.add(location);
-              }
-            });
+    for (int row = 0; row < boardSize; row++) {
+      for (int col = 0; col < boardSize; col++) {
+        if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RECHARGE) {
+          rechargeStations.add(new Point(row, col));
+        } else if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RED_MARKET) {
+          marketTiles.add(new Point(row, col));
+        }
+      }
+    }
   }
 
   /**
@@ -74,12 +77,18 @@ public class ZaidStrategy implements MinePlayerStrategy {
   @Override
   public TurnAction getTurnAction(
       PlayerBoardView boardView, Economy economy, int currentCharge, boolean isRedTurn) {
+    if (rechargeStations.isEmpty() || marketTiles.isEmpty()) {
+      throw new IllegalArgumentException("Board does not have correct tiles");
+    }
+
     Point currentLocation = boardView.getYourLocation();
     Point closestMarket = findClosestMarketLocation(currentLocation);
-    Point closestResource = findClosestResourceTile(currentLocation, findAllResourceTiles(boardView));
+    Point closestResource =
+        findClosestResourceTile(currentLocation, findAllResourceTiles(boardView));
     TurnAction goToResource = computeMovement(closestResource, currentLocation);
     TurnAction goToRecharge = computeMovement(rechargeStations.get(0), currentLocation);
     TurnAction goToMarket = computeMovement(closestMarket, currentLocation);
+    List<InventoryItem> itemAtCurrentLocation = boardView.getItemsOnGround().get(currentLocation);
 
     if (currentCharge <= maxCharge / 4 && goToRecharge != null) {
       return goToRecharge;
@@ -87,7 +96,8 @@ public class ZaidStrategy implements MinePlayerStrategy {
       return null;
     }
 
-    if (!boardView.getItemsOnGround().get(currentLocation).isEmpty() && inventorySize < 5) {
+    if (itemAtCurrentLocation != null && !itemAtCurrentLocation.isEmpty()
+        && inventorySize < maxInventorySize) {
       inventorySize++;
       return TurnAction.PICK_UP_RESOURCE;
     }
@@ -167,7 +177,6 @@ public class ZaidStrategy implements MinePlayerStrategy {
     return false;
   }
 
-
   /**
    * Computes the movement of the robot depending on the current and target location.
    *
@@ -227,7 +236,8 @@ public class ZaidStrategy implements MinePlayerStrategy {
   }
 
   /**
-   * Finds all the resource tiles on the board after every getTurnAction(), used in findClosestResourceTile().
+   * Finds all the resource tiles on the board after every getTurnAction(), used in
+   * findClosestResourceTile().
    *
    * @param boardView access to all the points on the ground after every turn action
    * @return an ArrayList<Point> of all the resources on the ground at that turn action
@@ -235,19 +245,27 @@ public class ZaidStrategy implements MinePlayerStrategy {
   private ArrayList<Point> findAllResourceTiles(PlayerBoardView boardView) {
     ArrayList<Point> resources = new ArrayList<>();
 
-    boardView.getItemsOnGround().keySet()
-        .forEach(
-            location -> {
-              if (boardView.getTileTypeAtLocation(location) == TileType.RESOURCE_DIAMOND
-                  || boardView.getTileTypeAtLocation(location) == TileType.RESOURCE_EMERALD) {
-                resources.add(location);
-              }
-            });
+    for (int row = 0; row < boardSize; row++) {
+      for (int col = 0; col < boardSize; col++) {
+        if (boardView.getTileTypeAtLocation(row, col) == TileType.RESOURCE_DIAMOND
+                || boardView.getTileTypeAtLocation(row, col) == TileType.RESOURCE_EMERALD) {
+          resources.add(new Point(row, col));
+        }
+      }
+    }
 
     return resources;
   }
 
   public void setInventorySize(int inventorySize) {
     this.inventorySize = inventorySize;
+  }
+
+  public void setMarketTiles(ArrayList<Point> marketTiles) {
+    this.marketTiles = marketTiles;
+  }
+
+  public void setRechargeStations(ArrayList<Point> rechargeStations) {
+    this.rechargeStations = rechargeStations;
   }
 }

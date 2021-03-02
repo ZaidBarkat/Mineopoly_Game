@@ -7,13 +7,11 @@ import mineopoly_three.tiles.TileType;
 import mineopoly_three.util.DistanceUtil;
 import java.awt.*;
 import java.util.*;
-import java.util.List;
 
 public class ZaidStrategy implements MinePlayerStrategy {
   private int inventorySize = 0;
   private int maxInventorySize;
   private int maxCharge;
-  private int boardSize;
   private ArrayList<Point> marketTiles = new ArrayList<>();
   private ArrayList<Point> rechargeStations = new ArrayList<>();
 
@@ -46,9 +44,8 @@ public class ZaidStrategy implements MinePlayerStrategy {
     inventorySize = 0;
     this.maxInventorySize = maxInventorySize;
     this.maxCharge = maxCharge;
-    this.boardSize = boardSize;
 
-    startingBoard.getItemsOnGround().keySet().stream()
+    startingBoard.getItemsOnGround().keySet()
         .forEach(
             location -> {
               if (startingBoard.getTileTypeAtLocation(location) == TileType.RECHARGE) {
@@ -77,36 +74,35 @@ public class ZaidStrategy implements MinePlayerStrategy {
   @Override
   public TurnAction getTurnAction(
       PlayerBoardView boardView, Economy economy, int currentCharge, boolean isRedTurn) {
-    Point yourLocation = boardView.getYourLocation();
-    Point closestMarket = findClosestMarketLocation(yourLocation);
-    Point closestResource = findClosestResourceTile(yourLocation, findAllResourceTiles(boardView));
-    TurnAction goToResource = computeMovement(closestResource, yourLocation);
-    TurnAction goToRecharge = computeMovement(rechargeStations.get(0), yourLocation);
-    TurnAction goToMarket = computeMovement(closestMarket, yourLocation);
+    Point currentLocation = boardView.getYourLocation();
+    Point closestMarket = findClosestMarketLocation(currentLocation);
+    Point closestResource = findClosestResourceTile(currentLocation, findAllResourceTiles(boardView));
+    TurnAction goToResource = computeMovement(closestResource, currentLocation);
+    TurnAction goToRecharge = computeMovement(rechargeStations.get(0), currentLocation);
+    TurnAction goToMarket = computeMovement(closestMarket, currentLocation);
 
     if (currentCharge <= maxCharge / 4 && goToRecharge != null) {
       return goToRecharge;
-    } else if (isOnRecharge(yourLocation, currentCharge)) {
+    } else if (isOnRecharge(currentLocation, currentCharge)) {
       return null;
     }
 
-    if (!boardView.getItemsOnGround().get(yourLocation).isEmpty() && inventorySize < 5) {
+    if (!boardView.getItemsOnGround().get(currentLocation).isEmpty() && inventorySize < 5) {
       inventorySize++;
       return TurnAction.PICK_UP_RESOURCE;
     }
 
     if (inventorySize == maxInventorySize && goToMarket != null) {
       return goToMarket;
-    } else if (closestMarket.equals(yourLocation)) {
+    } else if (closestMarket.equals(currentLocation)) {
       inventorySize = 0;
     }
 
     if (goToResource != null) {
       return goToResource;
-    } else if (closestResource.equals(yourLocation)) {
+    } else if (closestResource.equals(currentLocation)) {
       return TurnAction.MINE;
     }
-
     return null;
   }
 
@@ -151,41 +147,58 @@ public class ZaidStrategy implements MinePlayerStrategy {
   @Override
   public void endRound(int pointsScored, int opponentPointsScored) {
     inventorySize = 0;
-    boardSize = 0;
-    maxInventorySize = 0;
-    maxCharge = 0;
     rechargeStations.clear();
     marketTiles.clear();
   }
 
-  private boolean isOnRecharge(Point yourLocation, int currentCharge) {
+  /**
+   * Checks if the player is on the recharge station and the current charge is not maxed out.
+   *
+   * @param currentLocation the player's location
+   * @param currentCharge the charge of the robot
+   * @return true if the player is on the recharge Station
+   */
+  private boolean isOnRecharge(Point currentLocation, int currentCharge) {
     for (Point rechargeStation : rechargeStations) {
-      if (yourLocation.equals(rechargeStation) && currentCharge != maxCharge) {
+      if (currentLocation.equals(rechargeStation) && currentCharge != maxCharge) {
         return true;
       }
     }
     return false;
   }
 
-  private TurnAction computeMovement(Point targetLocation, Point initialLocation) {
-    if (targetLocation.y < initialLocation.y) {
+
+  /**
+   * Computes the movement of the robot depending on the current and target location.
+   *
+   * @param targetLocation where the robot wants to move
+   * @param currentLocation where the robot starts
+   * @return turnAction of the robot's movement
+   */
+  private TurnAction computeMovement(Point targetLocation, Point currentLocation) {
+    if (targetLocation.y < currentLocation.y) {
       return TurnAction.MOVE_DOWN;
-    } else if (targetLocation.y > initialLocation.y) {
+    } else if (targetLocation.y > currentLocation.y) {
       return TurnAction.MOVE_UP;
-    }
-    if (targetLocation.x < initialLocation.x) {
+    } else if (targetLocation.x < currentLocation.x) {
       return TurnAction.MOVE_LEFT;
-    } else if (targetLocation.x > initialLocation.x) {
+    } else if (targetLocation.x > currentLocation.x) {
       return TurnAction.MOVE_RIGHT;
     }
     return null;
   }
 
-  private Point findClosestMarketLocation(Point yourLocation) {
+  /**
+   * Finds the closest market location and returns that Point.
+   *
+   * @param currentLocation the robot's current location
+   * @return a Point of the closest market Tile of the robot
+   */
+  private Point findClosestMarketLocation(Point currentLocation) {
     Point closestMarket;
 
-    if (DistanceUtil.getManhattanDistance(marketTiles.get(0), yourLocation)
-        > DistanceUtil.getManhattanDistance(marketTiles.get(1), yourLocation)) {
+    if (DistanceUtil.getManhattanDistance(marketTiles.get(0), currentLocation)
+        > DistanceUtil.getManhattanDistance(marketTiles.get(1), currentLocation)) {
       closestMarket = marketTiles.get(1);
     } else {
       closestMarket = marketTiles.get(0);
@@ -194,22 +207,35 @@ public class ZaidStrategy implements MinePlayerStrategy {
     return closestMarket;
   }
 
-  private Point findClosestResourceTile(Point yourLocation, ArrayList<Point> resources) {
+  /**
+   * Finds the closest resource tile, whether it be a Diamond or Emerald.
+   *
+   * @param currentLocation the robot's current location
+   * @param resources an arrayList of all the resources on the board after every getTurnAction()
+   * @return a Point of the closest resource to the robot
+   */
+  private Point findClosestResourceTile(Point currentLocation, ArrayList<Point> resources) {
     Point firstLocation = resources.get(0);
 
     for (Point closestLocation : resources) {
-      if (DistanceUtil.getManhattanDistance(firstLocation, yourLocation)
-          > DistanceUtil.getManhattanDistance(closestLocation, yourLocation)) {
+      if (DistanceUtil.getManhattanDistance(firstLocation, currentLocation)
+          > DistanceUtil.getManhattanDistance(closestLocation, currentLocation)) {
         firstLocation = closestLocation;
       }
     }
     return firstLocation;
   }
 
+  /**
+   * Finds all the resource tiles on the board after every getTurnAction(), used in findClosestResourceTile().
+   *
+   * @param boardView access to all the points on the ground after every turn action
+   * @return an ArrayList<Point> of all the resources on the ground at that turn action
+   */
   private ArrayList<Point> findAllResourceTiles(PlayerBoardView boardView) {
     ArrayList<Point> resources = new ArrayList<>();
 
-    boardView.getItemsOnGround().keySet().stream()
+    boardView.getItemsOnGround().keySet()
         .forEach(
             location -> {
               if (boardView.getTileTypeAtLocation(location) == TileType.RESOURCE_DIAMOND

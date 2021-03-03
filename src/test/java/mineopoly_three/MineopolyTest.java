@@ -169,15 +169,15 @@ public class MineopolyTest {
 
     TileType[][] boardTileTypes =
         new TileType[][] {
-          {TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.RESOURCE_DIAMOND},
-          {TileType.BLUE_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY},
-          {TileType.RECHARGE, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY},
-          {TileType.RESOURCE_EMERALD, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY}
+          {TileType.RECHARGE, TileType.RED_MARKET},
+          {TileType.RESOURCE_DIAMOND, TileType.RED_MARKET}
         };
 
     PlayerBoardView sampleBoardPickUp =
         new PlayerBoardView(boardTileTypes, itemToPickUp, new Point(), new Point(), 0);
 
+    zaidStrategyThree.initialize(
+        2, 5, 80, 3000, sampleBoardPickUp, sampleBoardPickUp.getYourLocation(), true, null);
     TurnAction action = zaidStrategyThree.getTurnAction(sampleBoardPickUp, null, 80, true);
 
     assertEquals(TurnAction.PICK_UP_RESOURCE, action);

@@ -1,6 +1,8 @@
 package mineopoly_three;
 
 import mineopoly_three.action.TurnAction;
+import mineopoly_three.item.InventoryItem;
+import mineopoly_three.item.ItemType;
 import mineopoly_three.strategy.PlayerBoardView;
 import mineopoly_three.strategy.ZaidStrategy;
 import mineopoly_three.tiles.TileType;
@@ -8,7 +10,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -153,5 +157,28 @@ public class MineopolyTest {
   @Test(expected = IllegalArgumentException.class)
   public void testValidResourceTileBoard() {
     TurnAction action = zaidStrategyThree.getTurnAction(sampleBoardThree, null, 80, true);
+  }
+
+  @Test
+  public void testValidPickUpTile() {
+    HashMap<Point, List<InventoryItem>> itemToPickUp = new HashMap<>();
+    List<InventoryItem> listToPopulate = new ArrayList<>();
+    InventoryItem item = new InventoryItem(ItemType.DIAMOND);
+    listToPopulate.add(item);
+    itemToPickUp.put(new Point(0, 0), listToPopulate);
+
+    TileType[][] boardTileTypes =
+            new TileType[][] {
+                    {TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.RESOURCE_DIAMOND},
+                    {TileType.BLUE_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY},
+                    {TileType.RECHARGE, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY},
+                    {TileType.RESOURCE_EMERALD, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY}
+            };
+
+    PlayerBoardView sampleBoardPickUp = new PlayerBoardView(boardTileTypes, itemToPickUp, new Point(), new Point(), 0);
+
+    TurnAction action = zaidStrategyThree.getTurnAction(sampleBoardPickUp, null, 80, true);
+
+    assertEquals(TurnAction.PICK_UP_RESOURCE, action);
   }
 }

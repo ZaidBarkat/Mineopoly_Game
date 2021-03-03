@@ -168,14 +168,15 @@ public class MineopolyTest {
     itemToPickUp.put(new Point(0, 0), listToPopulate);
 
     TileType[][] boardTileTypes =
-            new TileType[][] {
-                    {TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.RESOURCE_DIAMOND},
-                    {TileType.BLUE_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY},
-                    {TileType.RECHARGE, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY},
-                    {TileType.RESOURCE_EMERALD, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY}
-            };
+        new TileType[][] {
+          {TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.RESOURCE_DIAMOND},
+          {TileType.BLUE_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY},
+          {TileType.RECHARGE, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY},
+          {TileType.RESOURCE_EMERALD, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY}
+        };
 
-    PlayerBoardView sampleBoardPickUp = new PlayerBoardView(boardTileTypes, itemToPickUp, new Point(), new Point(), 0);
+    PlayerBoardView sampleBoardPickUp =
+        new PlayerBoardView(boardTileTypes, itemToPickUp, new Point(), new Point(), 0);
 
     TurnAction action = zaidStrategyThree.getTurnAction(sampleBoardPickUp, null, 80, true);
 

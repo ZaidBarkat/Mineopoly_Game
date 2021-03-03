@@ -77,8 +77,10 @@ public class ZaidStrategy implements MinePlayerStrategy {
   @Override
   public TurnAction getTurnAction(
       PlayerBoardView boardView, Economy economy, int currentCharge, boolean isRedTurn) {
-    if (rechargeStations.isEmpty() || marketTiles.isEmpty()) {
-      throw new IllegalArgumentException("Board does not have correct tiles");
+    if (findAllResourceTiles(boardView) == null) {
+      return null;
+    } else if (rechargeStations.isEmpty() || marketTiles.isEmpty()) {
+      throw new IllegalArgumentException("Board does not have the correct tiles.");
     }
 
     Point currentLocation = boardView.getYourLocation();
@@ -96,7 +98,8 @@ public class ZaidStrategy implements MinePlayerStrategy {
       return null;
     }
 
-    if (itemAtCurrentLocation != null && !itemAtCurrentLocation.isEmpty()
+    if (itemAtCurrentLocation != null
+        && !itemAtCurrentLocation.isEmpty()
         && inventorySize < maxInventorySize) {
       inventorySize++;
       return TurnAction.PICK_UP_RESOURCE;
@@ -248,10 +251,14 @@ public class ZaidStrategy implements MinePlayerStrategy {
     for (int row = 0; row < boardSize; row++) {
       for (int col = 0; col < boardSize; col++) {
         if (boardView.getTileTypeAtLocation(row, col) == TileType.RESOURCE_DIAMOND
-                || boardView.getTileTypeAtLocation(row, col) == TileType.RESOURCE_EMERALD) {
+            || boardView.getTileTypeAtLocation(row, col) == TileType.RESOURCE_EMERALD
+            || boardView.getTileTypeAtLocation(row, col) == TileType.RESOURCE_RUBY) {
           resources.add(new Point(row, col));
         }
       }
+    }
+    if (resources.isEmpty()) {
+      return null;
     }
 
     return resources;
@@ -259,13 +266,5 @@ public class ZaidStrategy implements MinePlayerStrategy {
 
   public void setInventorySize(int inventorySize) {
     this.inventorySize = inventorySize;
-  }
-
-  public void setMarketTiles(ArrayList<Point> marketTiles) {
-    this.marketTiles = marketTiles;
-  }
-
-  public void setRechargeStations(ArrayList<Point> rechargeStations) {
-    this.rechargeStations = rechargeStations;
   }
 }

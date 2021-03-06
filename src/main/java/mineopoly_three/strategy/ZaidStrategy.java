@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.List;
 
 public class ZaidStrategy implements MinePlayerStrategy {
-  private int inventorySize = 0;
+  private int inventorySize;
   private int maxInventorySize;
   private int maxCharge;
   private int boardSize;

@@ -56,8 +56,15 @@ public class ZaidStrategyCompetition implements MinePlayerStrategy {
       for (int col = 0; col < boardSize; col++) {
         if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RECHARGE) {
           rechargeStations.add(new Point(row, col));
-        } else if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RED_MARKET) {
-          marketTiles.add(new Point(row, col));
+        }
+        if (isRedPlayer) {
+          if (startingBoard.getTileTypeAtLocation(row, col) == TileType.RED_MARKET) {
+            marketTiles.add(new Point(row, col));
+          }
+        } else {
+          if (startingBoard.getTileTypeAtLocation(row, col) == TileType.BLUE_MARKET) {
+            marketTiles.add(new Point(row, col));
+          }
         }
       }
     }
@@ -83,8 +90,6 @@ public class ZaidStrategyCompetition implements MinePlayerStrategy {
       PlayerBoardView boardView, Economy economy, int currentCharge, boolean isRedTurn) {
     if (findAllResourceTiles(boardView) == null) {
       return null;
-    } else if (rechargeStations.isEmpty() || marketTiles.isEmpty()) {
-      throw new IllegalArgumentException("Board does not have the correct tiles.");
     }
 
     Point currentLocation = boardView.getYourLocation();

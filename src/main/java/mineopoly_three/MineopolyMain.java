@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Random;
 
 public class MineopolyMain {
-  private static final int DEFAULT_BOARD_SIZE = 14;
+  private static final int DEFAULT_BOARD_SIZE = 20;
   private static final int PREFERRED_GUI_WIDTH =
       500; // Bump this up or down according to your screen size
   private static final boolean TEST_STRATEGY_WIN_PERCENT =

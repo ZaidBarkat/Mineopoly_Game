@@ -1,6 +1,7 @@
 package mineopoly_three;
 
 import mineopoly_three.action.TurnAction;
+import mineopoly_three.competition.ZaidStrategyCompetition;
 import mineopoly_three.item.InventoryItem;
 import mineopoly_three.item.ItemType;
 import mineopoly_three.strategy.PlayerBoardView;
@@ -22,19 +23,19 @@ public class MineopolyTest {
   private PlayerBoardView sampleBoardOne;
   private PlayerBoardView sampleBoardTwo;
   private PlayerBoardView sampleBoardThree;
-  private ZaidStrategy zaidStrategyOne;
+  private ZaidStrategyCompetition zaidStrategyOne;
   private ZaidStrategy zaidStrategyTwo;
   private ZaidStrategy zaidStrategyThree;
 
   @Before
   public void setUpSampleBoardOne() {
-    zaidStrategyOne = new ZaidStrategy();
+    zaidStrategyOne = new ZaidStrategyCompetition();
 
     TileType[][] boardTileTypes =
         new TileType[][] {
           {TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.RESOURCE_DIAMOND},
           {TileType.BLUE_MARKET, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY},
-          {TileType.RECHARGE, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY},
+          {TileType.RECHARGE, TileType.RED_MARKET, TileType.BLUE_MARKET, TileType.EMPTY},
           {TileType.RESOURCE_EMERALD, TileType.RED_MARKET, TileType.EMPTY, TileType.EMPTY}
         };
 
@@ -42,15 +43,15 @@ public class MineopolyTest {
         new PlayerBoardView(boardTileTypes, new HashMap<>(), new Point(), new Point(), 0);
 
     zaidStrategyOne.initialize(
-        boardSize, 5, 80, 2000, sampleBoardOne, sampleBoardOne.getYourLocation(), true, null);
+        boardSize, 5, 80, 2000, sampleBoardOne, sampleBoardOne.getYourLocation(), false, null);
   }
 
   @Test
   public void testValidMarketTileMovementXAxis() {
     zaidStrategyOne.setInventorySize(5);
-    TurnAction action = zaidStrategyOne.getTurnAction(sampleBoardOne, null, 80, true);
+    TurnAction action = zaidStrategyOne.getTurnAction(sampleBoardOne, null, 80, false);
 
-    assertEquals(TurnAction.MOVE_RIGHT, action);
+    assertEquals(TurnAction.MOVE_UP, action);
   }
 
   @Test
@@ -151,12 +152,12 @@ public class MineopolyTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void testInvalidMarketAndRechargeBoard() {
-    TurnAction action = zaidStrategyThree.getTurnAction(sampleBoardThree, null, 80, true);
+    zaidStrategyThree.getTurnAction(sampleBoardThree, null, 80, true);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testValidResourceTileBoard() {
-    TurnAction action = zaidStrategyThree.getTurnAction(sampleBoardThree, null, 80, true);
+    zaidStrategyThree.getTurnAction(sampleBoardThree, null, 80, true);
   }
 
   @Test
